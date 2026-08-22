@@ -3,12 +3,19 @@ import time
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 import tools
 from agent import run_research
 from db import get_db as _db_factory
-from schemas import DossierCreate, DossierOut, ProjectCreate, ProjectOut, Source
+from schemas import (
+    DossierCreate,
+    DossierOut,
+    ProjectCreate,
+    ProjectOut,
+    Source,
+    ThreadMsgIn,
+    ThreadMsgOut,
+)
 
 
 # Research endpoint rate limiting: sliding window per client ip, in-process.
@@ -121,3 +128,80 @@ def create_research(
     )
     db.save_dossier(project_id, dossier)
     return dossier
+
+
+@app.post(
+    "/api/dossiers/{dossier_id}/thread",
+    response_model=list[ThreadMsgOut],
+)
+def post_thread_message(
+    dossier_id: str,
+    payload: ThreadMsgIn,
+    request: Request,
+    db=Depends(get_db),
+):
+    """Append a user follow-up and the agent reply to a dossier thread."""
+    _check_rate_limit(request)
+
+    dossier = db.get_dossier(dossier_id)
+    if dossier is None:
+        raise HTTPException(status_code=404, detail="dossier not found")
+
+    now = datetime.now(timezone.utc)
+    db.append_thread(
+        dossier_id,
+        ThreadMsgOut(role="user", text=payload.message, sources_used=[], created_at=now),
+    )
+
+    # Thread context: original question + answer, then each prior message.
+    prior = db.get_thread(dossier_id)
+    context_lines = [dossier.question, dossier.answer]
+    context_lines += [f"{msg.role}: {msg.text}" for msg in prior]
+    context = "\n\n".join(context_lines)
+
+    research_fn = getattr(app.state, "research_fn", None) or run_research
+    try:
+        result = research_fn(context)
+    except tools.ToolError as exc:
+        raise HTTPException(status_code=502, detail="research failed") from exc
+
+    sources_used = list(range(1, len(result.get("sources") or []) + 1))
+    db.append_thread(
+        dossier_id,
+        ThreadMsgOut(
+            role="agent",
+            text=result["answer"],
+            sources_used=sources_used,
+            created_at=datetime.now(timezone.utc),
+        ),
+    )
+    return db.get_thread(dossier_id)
+
+
+@app.get("/api/dossiers/{dossier_id}/export")
+def export_dossier(dossier_id: str, db=Depends(get_db)):
+    """Render one dossier as a downloadable markdown document."""
+    dossier = db.get_dossier(dossier_id)
+    if dossier is None:
+        raise HTTPException(status_code=404, detail="dossier not found")
+
+    lines = [f"# {dossier.question}", "", "## Answer", "", dossier.answer, ""]
+    for title, items in (("Key Findings", dossier.findings), ("Detailed Notes", dossier.notes)):
+        lines.append(f"## {title}")
+        lines.append("")
+        if items:
+            lines.extend(f"- {item}" for item in items)
+        else:
+            lines.append("No findings recorded")
+        lines.append("")
+    lines.append("## Sources")
+    lines.append("")
+    lines.extend(f"{s.n}. {s.title} - {s.url}" for s in dossier.sources)
+
+    markdown = "\n".join(lines)
+    filename = f"verisim-dossier-{dossier_id[:8]}.md"
+    return Response(
+        content=markdown,
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
