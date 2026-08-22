@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { apiGet, apiPost, formatDate } from '../api.js'
+import { apiGet, apiPost, apiUrl, formatDate } from '../api.js'
 import { parseCitations, findSource } from '../utils/citations.js'
 
 function DossierCard({ dossier, selected, onSelect }) {
@@ -55,13 +55,22 @@ function DossierView({ dossier, onClose, onOpenSource }) {
         <span className="text-xs uppercase tracking-wide text-[#7a6a55]">
           {formatDate(dossier.created_at)}
         </span>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-xs uppercase tracking-wide text-[#7a6a55] hover:text-[#1a1a1a] transition cursor-pointer"
-        >
-          Close view
-        </button>
+        <span className="flex items-center gap-2">
+          <a
+            href={apiUrl(`/api/dossiers/${dossier.dossier_id}/export`)}
+            download
+            className="text-xs uppercase tracking-wide border border-[#7a6a55]/40 rounded-md px-2 py-1 text-[#5a4f42] hover:bg-[#d97706]/20 transition"
+          >
+            Export .md
+          </a>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs uppercase tracking-wide text-[#7a6a55] hover:text-[#1a1a1a] transition cursor-pointer"
+          >
+            Close view
+          </button>
+        </span>
       </div>
 
       <h2 className="font-display text-xl text-[#1a1a1a] break-words mt-2">{dossier.question}</h2>
@@ -119,7 +128,101 @@ function DossierView({ dossier, onClose, onOpenSource }) {
           ))}
         </ol>
       )}
+
+      <ThreadPanel key={dossier.dossier_id} dossier={dossier} onOpenSource={onOpenSource} />
     </section>
+  )
+}
+
+function ThreadPanel({ dossier, onOpenSource }) {
+  const [thread, setThread] = useState([])
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
+
+  useEffect(() => {
+    let ignore = false
+    ;(async () => {
+      try {
+        const data = await apiGet(`/api/dossiers/${dossier.dossier_id}/thread`)
+        if (!ignore) setThread(data)
+      } catch {
+        // history is non-critical; leave the thread empty on failure
+      }
+    })()
+    return () => {
+      ignore = true
+    }
+  }, [dossier.dossier_id])
+
+  async function handleSend() {
+    if (draft.trim() === '' || sending) return
+    const text = draft.trim()
+    setThread((prev) => [...prev, { role: 'user', text, sources_used: [], _pending: true }])
+    setDraft('')
+    setSendError('')
+    setSending(true)
+    try {
+      const updated = await apiPost(`/api/dossiers/${dossier.dossier_id}/thread`, { message: text })
+      setThread(updated)
+    } catch (err) {
+      setThread((prev) => prev.filter((m) => !m._pending))
+      setSendError(err.message || 'Failed to send')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div>
+      <h3 className="font-display text-sm uppercase tracking-wider text-[#7a6a55] mt-5 mb-2">Thread</h3>
+      <div className="max-h-72 overflow-y-auto space-y-2">
+        {thread.map((msg, i) => {
+          const isUser = msg.role === 'user'
+          return (
+            <div key={i} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+              <div
+                className={`max-w-[85%] rounded-xl px-3 py-2 text-sm break-words whitespace-pre-line ${
+                  isUser
+                    ? `bg-[#d97706] text-black${msg._pending ? ' opacity-70' : ''}`
+                    : 'bg-white/80 text-[#1a1a1a] border border-black/10'
+                }`}
+              >
+                {isUser ? msg.text : renderTextWithCitations(msg.text, onOpenSource)}
+              </div>
+              {!isUser && Array.isArray(msg.sources_used) && msg.sources_used.length > 0 ? (
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  Cites {msg.sources_used.length} sources
+                </p>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
+
+      {sendError ? <p className="text-sm text-red-600 break-words mt-2">{sendError}</p> : null}
+
+      <textarea
+        rows={2}
+        maxLength={500}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder="Ask a follow-up..."
+        aria-label="Follow-up question"
+        className="w-full bg-white/80 border border-black/10 rounded-lg px-3 py-2 text-sm text-[#1a1a1a] focus:outline-none focus:border-[#d97706]/60 resize-y mt-2"
+      />
+      <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
+        <span className="text-xs text-gray-500">{draft.length}/500</span>
+        <button
+          type="button"
+          onClick={handleSend}
+          disabled={draft.trim() === '' || sending}
+          className="inline-flex items-center gap-2 bg-[#d97706] text-black rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {sending ? 'Sending...' : 'Send'}
+        </button>
+      </div>
+    </div>
   )
 }
 

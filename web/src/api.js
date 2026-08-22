@@ -27,6 +27,10 @@ export async function apiPost(path, body) {
   })
 }
 
+export function apiUrl(path) {
+  return `${BASE}${path}`
+}
+
 export function formatDate(iso) {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''

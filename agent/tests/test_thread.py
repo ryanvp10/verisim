@@ -5,12 +5,15 @@ app.state.research_fn, and the rate-limit bucket is cleared between tests.
 The rate-limit token consumption of the thread endpoint itself is NOT tested.
 """
 
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 
 import main
 import tools
 from db import FakeDb
+from schemas import ThreadMsgOut
 
 
 def _canned_followup(question: str) -> dict:
@@ -108,6 +111,37 @@ def test_export_returns_markdown_attachment(client, dossier_id):
 
 def test_export_unknown_dossier_returns_404(client):
     resp = client.get("/api/dossiers/no-such-id/export")
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "dossier not found"
+
+
+def test_get_thread_returns_appended_messages_in_order(client, dossier_id):
+    db = main.app.state.db
+    now = datetime.now(timezone.utc)
+    db.append_thread(
+        dossier_id,
+        ThreadMsgOut(role="user", text="What about the ending?", sources_used=[], created_at=now),
+    )
+    db.append_thread(
+        dossier_id,
+        ThreadMsgOut(role="agent", text="Follow-up answered", sources_used=[1, 2], created_at=now),
+    )
+
+    resp = client.get(f"/api/dossiers/{dossier_id}/thread")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 2
+    assert body[0]["role"] == "user"
+    assert body[0]["text"] == "What about the ending?"
+    assert body[1]["role"] == "agent"
+    assert body[1]["text"] == "Follow-up answered"
+    assert body[1]["sources_used"] == [1, 2]
+
+
+def test_get_thread_unknown_dossier_returns_404(client):
+    resp = client.get("/api/dossiers/no-such-id/thread")
 
     assert resp.status_code == 404
     assert resp.json()["detail"] == "dossier not found"

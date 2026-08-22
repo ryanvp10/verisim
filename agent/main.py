@@ -187,6 +187,14 @@ def post_thread_message(
     return db.get_thread(dossier_id)
 
 
+@app.get("/api/dossiers/{dossier_id}/thread", response_model=list[ThreadMsgOut])
+def get_dossier_thread(dossier_id: str, db=Depends(get_db)):
+    """Return the full follow-up thread for one dossier."""
+    if db.get_dossier(dossier_id) is None:
+        raise HTTPException(status_code=404, detail="dossier not found")
+    return db.get_thread(dossier_id)
+
+
 @app.get("/api/dossiers/{dossier_id}/export")
 def export_dossier(dossier_id: str, db=Depends(get_db)):
     """Render one dossier as a downloadable markdown document."""
