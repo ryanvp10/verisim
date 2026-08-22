@@ -1,0 +1,20 @@
+services:
+  agent:
+    build:
+      context: ./agent
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Uncomment when running Firestore or Vertex locally:
+    # volumes:
+    #   - ~/.config/gcloud:/root/.config/gcloud:ro
+
+  web:
+    build:
+      context: ./web
+    ports:
+      - "5173:5173"
+    depends_on:
+      - agent
