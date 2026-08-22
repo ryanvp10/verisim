@@ -1,10 +1,13 @@
 """Tests for the /api/projects REST endpoints."""
 
+from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 
 import main
 from db import FakeDb
+from schemas import DossierOut
 
 
 @pytest.fixture()
@@ -64,3 +67,37 @@ def test_create_project_with_overlong_title_returns_422(client):
     resp = client.post("/api/projects", json=_project_payload("x" * 121))
 
     assert resp.status_code == 422
+
+
+def test_list_project_dossiers_returns_newest_first(client):
+    created = client.post("/api/projects", json=_project_payload()).json()
+
+    older = DossierOut(
+        dossier_id="dossier-old",
+        question="Older question?",
+        answer="Older answer.",
+        created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+    )
+    newer = DossierOut(
+        dossier_id="dossier-new",
+        question="Newer question?",
+        answer="Newer answer.",
+        created_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+    )
+    main.app.state.db.save_dossier(created["id"], older)
+    main.app.state.db.save_dossier(created["id"], newer)
+
+    resp = client.get(f"/api/projects/{created['id']}/dossiers")
+
+    assert resp.status_code == 200
+    items = resp.json()
+    assert len(items) == 2
+    assert items[0]["dossier_id"] == "dossier-new"
+    assert items[1]["dossier_id"] == "dossier-old"
+
+
+def test_list_dossiers_unknown_project_returns_404(client):
+    resp = client.get("/api/projects/does-not-exist/dossiers")
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "project not found"

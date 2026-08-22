@@ -84,6 +84,15 @@ def get_project(project_id: str, db=Depends(get_db)):
     return project
 
 
+@app.get("/api/projects/{project_id}/dossiers", response_model=list[DossierOut])
+def list_project_dossiers(project_id: str, db=Depends(get_db)):
+    """List all dossiers for a project, newest first."""
+    project = db.get_project(project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return db.list_dossiers(project_id)
+
+
 @app.post(
     "/api/projects/{project_id}/research",
     response_model=DossierOut,
