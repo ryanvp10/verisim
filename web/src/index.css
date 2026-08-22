@@ -1,0 +1,19 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0f1115;
+  --color-panel: #171a21;
+  --color-paper: #f7f4ec;
+  --color-accent: #d97706;
+  --font-display: Georgia, 'Playfair Display', serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: #e5e7eb;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
