@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+google-adk
+parallel-web
+google-cloud-firestore
+pytest
+httpx
