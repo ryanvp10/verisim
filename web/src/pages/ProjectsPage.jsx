@@ -207,10 +207,10 @@ export default function ProjectsPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-bg">
+    <div className="min-h-dvh overflow-x-clip bg-bg">
       <ThemeToggle />
       <div className="max-w-6xl mx-auto w-full px-6 py-12 sm:py-16">
-        <section className="max-w-2xl mx-auto text-center">
+        <section className="relative film-grain max-w-2xl mx-auto text-center">
           <span className="inline-flex items-center rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
             Verisim Research
           </span>
@@ -225,7 +225,13 @@ export default function ProjectsPage() {
           </p>
         </section>
 
-        <form onSubmit={handleHomeAsk} className="mt-8 max-w-xl mx-auto">
+        <form onSubmit={handleHomeAsk} className="relative isolate mt-8 max-w-xl mx-auto">
+          {/* Amber spotlight: purely decorative, absolutely positioned so it can
+              never shift layout; isolate keeps -z-10 above the page background. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-40 w-[150%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(255,184,103,0.20),transparent)] dark:bg-[radial-gradient(closest-side,rgba(255,184,103,0.28),transparent)]"
+          />
           <div className="flex items-center gap-2 bg-surface border border-line rounded-2xl p-2 shadow-sm hover:shadow-md transition duration-200 ease-out focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/20">
             <label htmlFor="home-question" className="sr-only">
               Ask a research question
