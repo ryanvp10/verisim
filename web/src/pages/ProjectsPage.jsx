@@ -145,6 +145,7 @@ function NewProjectModal({ onClose }) {
 }
 
 export default function ProjectsPage() {
+  const navigate = useNavigate()
   const [projects, setProjects] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
