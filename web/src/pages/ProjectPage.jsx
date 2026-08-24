@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { apiGet, apiPost, apiUrl, formatDate } from '../api.js'
 import { parseCitations, findSource } from '../utils/citations.js'
+import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function DossierCard({ dossier, selected, onSelect }) {
   const sourceCount = Array.isArray(dossier.sources) ? dossier.sources.length : 0
@@ -12,7 +13,7 @@ function DossierCard({ dossier, selected, onSelect }) {
       className={`w-full text-left bg-surface rounded-2xl p-5 border transition duration-200 ease-out break-words cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-24px_rgba(23,23,23,0.25)] ${
         selected
           ? 'border-accent ring-2 ring-accent/40'
-          : 'border-line hover:border-neutral-300'
+          : 'border-line hover:border-faint'
       }`}
     >
       <p className="font-medium text-ink break-words">{dossier.question}</p>
@@ -63,7 +64,7 @@ function DossierView({ dossier, onClose, onOpenSource }) {
           <a
             href={apiUrl(`/api/dossiers/${dossier.dossier_id}/export`)}
             download
-            className="text-xs font-medium uppercase tracking-wide border border-line rounded-full px-3 py-1 text-muted hover:text-ink hover:border-neutral-300 transition duration-200 ease-out"
+            className="text-xs font-medium uppercase tracking-wide border border-line rounded-full px-3 py-1 text-muted hover:text-ink hover:border-faint transition duration-200 ease-out"
           >
             Export .md
           </a>
@@ -196,7 +197,7 @@ function ThreadPanel({ dossier, onOpenSource }) {
               <div
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words whitespace-pre-line ${
                   isUser
-                    ? `bg-neutral-900 text-white rounded-2xl${msg._pending ? ' opacity-70' : ''}`
+                    ? `bg-ink text-surface rounded-2xl${msg._pending ? ' opacity-70' : ''}`
                     : 'bg-surface text-ink border border-line rounded-2xl'
                 }`}
               >
@@ -212,7 +213,9 @@ function ThreadPanel({ dossier, onOpenSource }) {
         })}
       </div>
 
-      {sendError ? <p className="text-sm text-red-600 break-words mt-2">{sendError}</p> : null}
+      {sendError ? (
+        <p className="text-sm text-red-600 dark:text-red-400 break-words mt-2">{sendError}</p>
+      ) : null}
 
       <textarea
         rows={2}
@@ -229,7 +232,7 @@ function ThreadPanel({ dossier, onOpenSource }) {
           type="button"
           onClick={handleSend}
           disabled={draft.trim() === '' || sending}
-          className="inline-flex items-center gap-2 bg-neutral-900 text-white rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 bg-neutral-900 text-white rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
         >
           {sending ? 'Sending...' : 'Send'}
         </button>
@@ -256,7 +259,7 @@ function SourceDrawer({ n, dossier, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-ink/30 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
       <div className="absolute right-0 top-0 h-full w-full max-w-full bg-surface text-ink p-6 overflow-y-auto border-l border-line shadow-2xl sm:top-4 sm:right-4 sm:bottom-4 sm:h-auto sm:w-96 sm:rounded-3xl sm:border max-sm:top-auto max-sm:h-auto max-sm:max-h-[70dvh] max-sm:rounded-t-3xl max-sm:border-l-0 max-sm:border-t">
         <div className="flex items-center justify-between">
           <span className="text-xs uppercase tracking-wide text-faint">Source {n}</span>
@@ -275,7 +278,7 @@ function SourceDrawer({ n, dossier, onClose }) {
         <p className="text-sm text-muted whitespace-pre-line break-words mt-3">
           {source ? source.excerpt : ''}
         </p>
-        {!source ? <p className="text-sm text-red-600 mt-3">Not found.</p> : null}
+        {!source ? <p className="text-sm text-red-600 dark:text-red-400 mt-3">Not found.</p> : null}
         {source && source.url && /^https?:\/\//i.test(source.url) ? (
           <a
             href={source.url}
@@ -388,6 +391,7 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-dvh bg-bg">
+      <ThemeToggle />
       <div className="max-w-6xl mx-auto w-full px-6 py-10">
         <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink transition duration-200 ease-out mt-1">
           ← All projects
@@ -398,11 +402,11 @@ export default function ProjectPage() {
             <p className="text-sm text-faint">Loading project...</p>
           </div>
         ) : error ? (
-          <div className="rounded-2xl bg-red-50 border border-red-200 text-red-600 px-4 py-3 flex items-center justify-between gap-3 flex-wrap mt-4">
+          <div className="rounded-2xl bg-red-50 border border-red-200 text-red-600 px-4 py-3 flex items-center justify-between gap-3 flex-wrap mt-4 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400">
             <span className="break-words">{error}</span>
             <button
               onClick={handleRetry}
-              className="rounded-full border border-red-200 bg-white px-4 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 transition duration-200 ease-out shrink-0"
+              className="rounded-full border border-red-200 bg-white px-4 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 transition duration-200 ease-out shrink-0 dark:border-red-500/30 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-500/10"
             >
               Retry
             </button>
@@ -442,7 +446,7 @@ export default function ProjectPage() {
                   className="w-full resize-y bg-transparent px-2 py-1.5 text-sm text-ink placeholder:text-faint focus:outline-none"
                 />
                 {askError ? (
-                  <div className="rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm px-3.5 py-2.5 mx-2 mb-2 break-words">
+                  <div className="rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm px-3.5 py-2.5 mx-2 mb-2 break-words dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400">
                     {askError}
                   </div>
                 ) : null}
@@ -453,11 +457,11 @@ export default function ProjectPage() {
                   <button
                     type="submit"
                     disabled={question.trim() === '' || researching}
-                    className="inline-flex items-center gap-2 bg-neutral-900 text-white rounded-full px-5 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 bg-neutral-900 text-white rounded-full px-5 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                   >
                     {researching ? (
                       <>
-                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white align-[-2px]" />
+                        <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white align-[-2px] dark:border-neutral-900/30 dark:border-t-neutral-900" />
                         Researching...
                       </>
                     ) : (

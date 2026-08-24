@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiGet, apiPost } from '../api.js'
+import ThemeToggle from '../components/ThemeToggle.jsx'
 
 function ProjectCard({ project }) {
   const navigate = useNavigate()
@@ -15,7 +16,7 @@ function ProjectCard({ project }) {
           navigate(`/project/${project.id}`)
         }
       }}
-      className="bg-surface border border-line rounded-2xl p-5 transition duration-200 ease-out break-words cursor-pointer hover:-translate-y-0.5 hover:border-neutral-200 hover:shadow-[0_16px_40px_-24px_rgba(23,23,23,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
+      className="bg-surface border border-line rounded-2xl p-5 transition duration-200 ease-out break-words cursor-pointer hover:-translate-y-0.5 hover:border-faint hover:shadow-[0_16px_40px_-24px_rgba(23,23,23,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
     >
       <h2 className="font-display text-lg font-semibold tracking-tight text-ink break-words">
         {project.title}
@@ -69,7 +70,7 @@ function NewProjectModal({ onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] flex items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
         className="bg-surface rounded-3xl p-6 w-full max-w-md border border-line shadow-2xl"
@@ -116,7 +117,7 @@ function NewProjectModal({ onClose }) {
         />
 
         {error ? (
-          <div className="rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm px-3.5 py-2.5 mb-5 break-words">
+          <div className="rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm px-3.5 py-2.5 mb-5 break-words dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400">
             {error}
           </div>
         ) : null}
@@ -133,7 +134,7 @@ function NewProjectModal({ onClose }) {
           <button
             type="submit"
             disabled={!title.trim() || submitting}
-            className="bg-neutral-900 text-white rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-neutral-900 text-white rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
           >
             {submitting ? 'Creating...' : 'Create'}
           </button>
@@ -207,6 +208,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-dvh bg-bg">
+      <ThemeToggle />
       <div className="max-w-6xl mx-auto w-full px-6 py-12 sm:py-16">
         <section className="max-w-2xl mx-auto text-center">
           <span className="inline-flex items-center rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-muted">
@@ -223,42 +225,74 @@ export default function ProjectsPage() {
           </p>
         </section>
 
-        <form onSubmit={handleHomeAsk} className="mt-8 max-w-2xl mx-auto">
-          <div className="bg-surface border border-line rounded-full p-4 shadow-[0_1px_2px_rgba(23,23,23,0.04)] transition duration-200 ease-out focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/20">
+        <form onSubmit={handleHomeAsk} className="mt-8 max-w-xl mx-auto">
+          <div className="flex items-center gap-2 bg-surface border border-line rounded-2xl p-2 shadow-sm hover:shadow-md transition duration-200 ease-out focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/20">
             <label htmlFor="home-question" className="sr-only">
               Ask a research question
             </label>
-            <textarea
+            <input
               id="home-question"
-              rows={2}
+              type="text"
               maxLength={500}
               value={askDraft}
               onChange={(e) => setAskDraft(e.target.value)}
-              placeholder="e.g. What does a 1920s Paris police archive smell like?"
-              className="w-full resize-y bg-transparent px-2 py-1.5 text-sm text-ink placeholder:text-faint focus:outline-none"
+              placeholder="Ask anything about your script’s world…"
+              className="flex-1 min-w-0 bg-transparent border-none px-3 py-2 text-base text-ink placeholder:text-faint focus:outline-none"
             />
-            <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
-              <span className={`text-xs ${askDraft.length > 480 ? 'text-accent-deep' : 'text-faint'}`}>
-                {askDraft.length}/500
-              </span>
-              <button
-                type="submit"
-                disabled={askDraft.trim() === '' || asking}
-                className="inline-flex items-center gap-2 bg-neutral-900 text-white rounded-full px-5 py-2 text-sm font-semibold transition duration-200 ease-out hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {asking ? (
-                  <>
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white align-[-2px]" />
-                    Researching...
-                  </>
-                ) : (
-                  'Research'
-                )}
-              </button>
-            </div>
+            <button
+              type="submit"
+              aria-label="Research"
+              disabled={askDraft.trim() === '' || asking}
+              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full px-4 sm:px-5 py-2.5 text-sm font-semibold bg-neutral-900 text-white hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 transition duration-200 ease-out"
+            >
+              {asking ? (
+                <>
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white align-[-2px] dark:border-neutral-900/30 dark:border-t-neutral-900" />
+                  <span className="hidden sm:inline">Researching...</span>
+                  <span className="sm:hidden">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="hidden sm:inline">Research</span>
+                  <span className="sm:hidden">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </span>
+                </>
+              )}
+            </button>
           </div>
           {askError ? (
-            <div className="mt-3 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 break-words">
+            <div className="mt-3 rounded-2xl bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 break-words dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400">
               {askError}
             </div>
           ) : null}
@@ -270,7 +304,7 @@ export default function ProjectsPage() {
           </h2>
           <button
             onClick={() => setModalOpen(true)}
-            className="border border-line bg-surface text-ink rounded-full px-4 py-2 text-sm font-medium transition duration-200 ease-out hover:border-neutral-300 hover:shadow-sm"
+            className="border border-line bg-surface text-ink rounded-full px-4 py-2 text-sm font-medium transition duration-200 ease-out hover:border-faint hover:shadow-sm"
           >
             + New Project
           </button>
@@ -281,11 +315,11 @@ export default function ProjectsPage() {
             <p className="text-sm text-faint">Loading projects...</p>
           </div>
         ) : error ? (
-          <div className="rounded-2xl bg-red-50 border border-red-200 text-red-600 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <div className="rounded-2xl bg-red-50 border border-red-200 text-red-600 px-4 py-3 flex items-center justify-between gap-3 flex-wrap dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-400">
             <span className="break-words">{error}</span>
             <button
               onClick={handleRetry}
-              className="rounded-full border border-red-200 bg-white px-4 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 transition duration-200 ease-out shrink-0"
+              className="rounded-full border border-red-200 bg-white px-4 py-1.5 text-sm font-medium text-red-600 hover:bg-red-100 transition duration-200 ease-out shrink-0 dark:border-red-500/30 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-500/10"
             >
               Retry
             </button>
